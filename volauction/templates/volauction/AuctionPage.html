@@ -2,11 +2,12 @@
 {% load otree static %}
 
 {% block title %}
-    Page title
+    Auction
 {% endblock %}
 
 {% block content %}
-
+    {% include 'volauction/includes/role_block.html' %}
+    {% formfields %}
     {% next_button %}
 
 {% endblock %}
