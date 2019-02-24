@@ -1,0 +1,20 @@
+{% extends "global/Page.html" %}
+{% load otree static %}
+
+{% block title %}
+    No Auction
+{% endblock %}
+
+{% block content %}
+    <div class="alert alert-danger">
+        <h5>
+            {% if player.auctioneer %}
+                No one subscribed for your auction.
+            {% else %}
+                No auctions took place this round.
+            {% endif %}
+        </h5>
+    </div>
+    {% next_button %}
+
+{% endblock %}

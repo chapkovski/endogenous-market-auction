@@ -41,11 +41,10 @@ class AuctionPage(Page):
         return self.form_class
 
     def is_displayed(self):
-        return not self.player.auctioneer
+        return not self.player.auctioneer and self.player.is_auction_available()
 
     def before_next_page(self):
         self.player.bid_dump = self.player.bid.price
-
 
 
 class BeforeResultsWP(WaitPage):
@@ -55,6 +54,13 @@ class BeforeResultsWP(WaitPage):
         self.group.dump_winning_prices()
         self.group.set_payoffs()
 
+
+class NoAuction(Page):
+    def is_displayed(self):
+        if self.player.auctioneer:
+            return Auction.objects.filter(auctioneer=self.player,winner__isnull=False)
+        else:
+            return not self.player.is_auction_available()
 
 class Results(Page):
     pass
@@ -66,5 +72,6 @@ page_sequence = [
     BeforeTradeWP,
     AuctionPage,
     BeforeResultsWP,
+    NoAuction,
     Results
 ]

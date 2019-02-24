@@ -17,6 +17,16 @@ doc = """
 Endogenuous market formation. 
 
 """
+
+# TODO: check for conflicts (no auctions to participate in)
+"""
+There are two types of conflicts possible.
+1. A person chooses to be an auctioneer, but no one chooses his auction. (it also includes the case when everyone
+from the opposing type chooses to be an auctioneer.
+
+2. A person decides to be a trader, but there are no auctions to attend.
+"""
+
 ########### BLOCK: ERROR MESSAGES ##############################################################
 SELLERS_ERR_MSG = 'Number of sellers per group should be less than total number of market participants'
 
@@ -70,13 +80,18 @@ class Group(BaseGroup):
 
     def mark_trader_winners(self):
         for t in self.traders:
-            if t.bid is not None:
+            try:
                 t.trader_is_winner = t.bid == t.bid.auction.winner
+            except Bid.DoesNotExist:
+                pass
 
     def dump_winning_prices(self):
         for a in self.auctioneers:
+            if a.auction.winner:
+                a.auc_price = a.auction.winner.price
 
-            a.auc_price = a.auction.winner.price
+    def is_auction_available(self, selling):
+        return self.auctions.filter(selling_auction=selling).exists()
 
 
 class Player(BasePlayer):
@@ -96,22 +111,29 @@ class Player(BasePlayer):
     def is_selling_auction_type(self):
         return self.role() == Constants.seller
 
+    def is_auction_available(self):
+        return self.group.is_auction_available(selling=self.role() == Constants.buyer)
+
     def get_payoff(self, price):
         return self.direction * (price - self.evaluation)
 
     def set_auctioneer_payoff(self):
         self.payoff = Constants.earning_if_none
-        if self.auction:
+        try:
             winner = self.auction.winner
             if winner:
                 self.payoff = self.get_payoff(winner.price)
+        except Auction.DoesNotExist:
+            pass
 
     def set_trader_payoff(self):
         self.payoff = Constants.earning_if_none
-        b = self.bid
-        if b:
+        try:
+            b = self.bid
             if b == b.auction.winner:
                 self.payoff = self.get_payoff(b.price)
+        except Bid.DoesNotExist:
+            pass
 
 
 class Auction(djmodels.Model):
