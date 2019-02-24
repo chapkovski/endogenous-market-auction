@@ -19,4 +19,4 @@ class BidForm(forms.ModelForm):
         self.fields['auction'] = forms.ModelChoiceField(
             queryset=Auction.objects.filter(market=group,
                                             selling_auction=auction_type,
-                                            ).exclude(owner=player))
+                                            ).exclude(auctioneer=player))

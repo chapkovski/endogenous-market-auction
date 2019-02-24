@@ -62,11 +62,12 @@ class Player(BasePlayer):
 class Auction(djmodels.Model):
     selling_auction = models.BooleanField(doc='if true, this is an auction to sell good (so the highest bid wins')
     market = djmodels.ForeignKey(to=Group, related_name='auctions')
-    owner = djmodels.OneToOneField(to=Player, related_name='auction')
+    auctioneer = djmodels.OneToOneField(to=Player, related_name='auction')
+    winner = djmodels.OneToOneField(to=Player, related_name='auction')
 
     def __str__(self):
         selling = 'Selling' if self.selling_auction else 'Buying'
-        return f'{selling} auction with baseline {self.owner.evaluation}'
+        return f'{selling} auction with baseline {self.auctioneer.evaluation}'
 
 
 class Bid(djmodels.Model):

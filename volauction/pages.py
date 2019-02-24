@@ -14,9 +14,10 @@ class ChoosingActivity(Page):
 
     def before_next_page(self):
         p = self.player
-        Auction.objects.create(selling_auction=p.role() == Constants.seller,
-                               market=p.group,
-                               owner=p)
+        if p.auctioneer:
+            Auction.objects.create(selling_auction=p.role() == Constants.seller,
+                                   market=p.group,
+                                   auctioneer=p)
 
 
 class AuctionPage(Page):
