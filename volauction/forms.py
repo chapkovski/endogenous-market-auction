@@ -15,7 +15,9 @@ class BidForm(forms.ModelForm):
         bid = kwargs['instance']
         player = bid.bidder
         group = player.group
-        auction_type = player.is_selling_auction_type()
+        # We need to inverse selling auction type so buyers would see selling auctions, and sellers would see
+        # buying auctions
+        auction_type = not player.is_selling_auction_type()
         self.fields['auction'] = forms.ModelChoiceField(
             queryset=Auction.objects.filter(market=group,
                                             selling_auction=auction_type,
