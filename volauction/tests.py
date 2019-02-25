@@ -1,18 +1,35 @@
-from otree.api import Currency as c, currency_range
+from otree.api import Currency as c, currency_range, Bot, SubmissionMustFail
 from .pages import *
-from ._builtin import Bot
+
 from .models import Constants
 import random
 from utils import cp
 
+
 class PlayerBot(Bot):
 
     def play_round(self):
-        # yield Announcement,
-        act = {'auctioneer': True if self.player.role() == Constants.seller else False}
+        yield Announcement,
+        act = {'auctioneer': random.choice([True, False])}
         yield ChoosingActivity, act
-        if not self.player.auctioneer:
-            # todo: select only auctions of correct type
-            auc = random.choice(self.group.get_available_auctions())
-            yield AuctionPage, {'auction': auc.pk, 'price': random.randint(0, 100)}
+        if self.player.auctioneer:
+            is_a = Auction.objects.filter(auctioneer=self.player, winner__isnull=True).exists()
+            if is_a:
+                yield NoAuction
+        else:
+            if self.player.is_auction_available():
+                auc = random.choice(self.player.get_available_auctions())
+                threshold = auc.auctioneer.evaluation
+                if auc.selling:
+                    yield SubmissionMustFail(AuctionPage,
+                                             {'auction': auc.pk, 'price': random.uniform(0, threshold)})
+
+                    yield AuctionPage, {'auction': auc.pk, 'price': random.uniform(threshold, threshold * 2)}
+                else:
+                    yield SubmissionMustFail(AuctionPage,
+                                             {'auction': auc.pk, 'price': random.uniform(threshold, threshold * 2)})
+                    yield AuctionPage, {'auction': auc.pk, 'price': random.uniform(0, threshold)}
+
+            else:
+                yield NoAuction
         yield Results

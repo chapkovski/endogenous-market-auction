@@ -74,7 +74,6 @@ class Group(BaseGroup):
             else:
                 p.set_trader_payoff()
 
-
     @property
     def traders(self):
         return [p for p in self.get_players() if not p.auctioneer]
@@ -117,17 +116,6 @@ class Group(BaseGroup):
             if a.auction.winner:
                 a.auc_price = a.auction.winner.price
 
-    def is_auction_available(self, selling):
-        """
-        Check if there is an available auction of a certain type - to show or not to show Auction page for traders.
-
-        :param selling: True if a player is interested in selling auctions
-        :type selling: bool
-        :return: Yes, if the auction of this type is available
-        :rtype: bool
-        """
-        return self.auctions.filter(selling_auction=selling).exists()
-
 
 class Player(BasePlayer):
     bid_dump = models.CurrencyField()
@@ -146,6 +134,15 @@ class Player(BasePlayer):
     def is_selling_auction_type(self):
         return self.role() == Constants.seller
 
+    def get_available_auctions(self):
+        """
+        Return all auctions of the group for this type of players.
+
+        :return: Queryset with available auctions.
+        :rtype: queryset
+        """
+        return  self.group.auctions.filter(selling=self.role() == Constants.buyer)
+
     def is_auction_available(self):
         """
         Checking if the group has an auction of a corresponding type.
@@ -153,7 +150,7 @@ class Player(BasePlayer):
         :return: Yes, if a group has an auction to participate in of a type correspodning to a player's role.
         :rtype: bool
         """
-        return self.group.is_auction_available(selling=self.role() == Constants.buyer)
+        return self.get_available_auctions().exists()
 
     def get_payoff(self, price):
         return self.direction * (price - self.evaluation)
@@ -178,14 +175,14 @@ class Player(BasePlayer):
 
 
 class Auction(djmodels.Model):
-    selling_auction = models.BooleanField(doc='if true, this is an auction to sell good (so the highest bid wins')
+    selling = models.BooleanField(doc='if true, this is an auction to sell good (so the highest bid wins')
     market = djmodels.ForeignKey(to=Group, related_name='auctions')
     auctioneer = djmodels.OneToOneField(to=Player, related_name='auction')
     winner = djmodels.OneToOneField(to='Bid', related_name='winner_bid', null=True)
 
     def __str__(self):
-        selling = 'Selling' if self.selling_auction else 'Buying'
-        minimax = 'minimum' if self.selling_auction else 'maximum'
+        selling = 'Selling' if self.selling else 'Buying'
+        minimax = 'minimum' if self.selling else 'maximum'
         # we pass pk here to distinguish between auctions with the same evaluation.
         return f'#{self.pk}: {selling} auction at {minimax} {self.auctioneer.evaluation}'
 
@@ -196,7 +193,7 @@ class Auction(djmodels.Model):
         :return: None.
         """
         bids = self.bids.filter(price__isnull=False)
-        f = Max if self.selling_auction else Min
+        f = Max if self.selling else Min
         # if this is the selling auction we need to get the item with max price, and with min price otherwise.
         winning_price = bids.aggregate(m=f('price')).get('m')
 

@@ -20,7 +20,7 @@ class BidForm(forms.ModelForm):
         auction_type = not player.is_selling_auction_type()
         self.fields['auction'] = forms.ModelChoiceField(
             queryset=Auction.objects.filter(market=group,
-                                            selling_auction=auction_type,
+                                            selling=auction_type,
                                             ).exclude(auctioneer=player))
 
     def clean(self):
@@ -29,7 +29,7 @@ class BidForm(forms.ModelForm):
         bid = cleaned_data.get("price")
         if auction and bid:
             evaluation = auction.auctioneer.evaluation
-            if auction.selling_auction:
+            if auction.selling:
                 if bid < evaluation:
                     raise forms.ValidationError(f'Your bid should be at least {evaluation}')
             else:

@@ -33,7 +33,7 @@ class ChoosingActivity(Page):
     def before_next_page(self):
         p = self.player
         if p.auctioneer:
-            Auction.objects.create(selling_auction=p.role() == Constants.seller,
+            Auction.objects.create(selling=p.role() == Constants.seller,
                                    market=p.group,
                                    auctioneer=p)
 
@@ -87,7 +87,7 @@ class Results(Page):
 
 page_sequence = [
     GroupCreateWP,
-    # Announcement,
+    Announcement,
     ChoosingActivity,
     BeforeTradeWP,
     AuctionPage,

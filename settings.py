@@ -22,6 +22,15 @@ SESSION_CONFIGS = [
         'num_sellers': 1,
         'use_browser_bots': False,
     },
+    {
+        'name': 'vol_3_4',
+        'display_name': "Endogenous market formation, 3 buyers, 4 sellers",
+        'num_demo_participants': 7,
+        'app_sequence': ['volauction'],
+        'num_buyers': 3,
+        'num_sellers': 4,
+        'use_browser_bots': False,
+    },
 ]
 
 
