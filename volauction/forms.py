@@ -22,3 +22,16 @@ class BidForm(forms.ModelForm):
             queryset=Auction.objects.filter(market=group,
                                             selling_auction=auction_type,
                                             ).exclude(auctioneer=player))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        auction = cleaned_data.get("auction")
+        bid = cleaned_data.get("price")
+        if auction and bid:
+            evaluation = auction.auctioneer.evaluation
+            if auction.selling_auction:
+                if bid < evaluation:
+                    raise forms.ValidationError(f'Your bid should be at least {evaluation}')
+            else:
+                if bid > evaluation:
+                    raise forms.ValidationError(f'Your bid should be maximum {evaluation}')

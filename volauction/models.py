@@ -23,12 +23,15 @@ Endogenuous market formation.
 There are two types of conflicts possible.
 1. A person chooses to be an auctioneer, but no one chooses his auction. (it also includes the case when everyone
 from the opposing type chooses to be an auctioneer.
+So if a person has an auction he owns. but there is no winner, that automatically means that no one participated. That 
+is the first situation when an individual is forwarded to NoAuction page.
 
 2. A person decides to be a trader, but there are no auctions to attend.
 """
 
 ########### BLOCK: ERROR MESSAGES ##############################################################
-SELLERS_ERR_MSG = 'Number of sellers per group should be less than total number of market participants'
+SELLERS_ERR_MSG = 'Number of sellers per group should be less than total number of market participants.'
+GROUP_SIZE_ERR_MSG = 'Number of participants in session should be divisible by the group size.'
 
 
 ############ END OF: ERROR MESSAGES #############################################################
@@ -36,11 +39,8 @@ SELLERS_ERR_MSG = 'Number of sellers per group should be less than total number 
 
 class Constants(BaseConstants):
     name_in_url = 'volauction'
-    # todo: make group size adjustable (see speed_app)
-    players_per_group = 3
+    players_per_group = None
     num_rounds = 1
-    num_sellers = 1
-    assert num_sellers < players_per_group, SELLERS_ERR_MSG
     buyer, seller = 'Buyer', 'Seller'  # keep role names here so we can change them later in one spot
     AUCTIONEER_CHOICES = [(True, 'Auctioneer'), (False, 'Participant in someone\'s auction')]
     lb, ub = 0, 10  # lower and upper boundaries of evaluation
@@ -48,7 +48,19 @@ class Constants(BaseConstants):
 
 
 class Subsession(BaseSubsession):
+    group_size = models.IntegerField(doc='number of total participants (sellers+buyers')
+    num_sellers = models.IntegerField(doc='number of sellers')
+    num_buyers = models.IntegerField(doc='number of buyers')
+
     def creating_session(self):
+        ########### BLOCK: Checking group size ##############################################################
+        self.num_sellers = self.session.config['num_sellers']
+        self.num_buyers = self.session.config['num_buyers']
+        self.group_size = self.num_buyers + self.num_sellers
+        tot_participants = self.session.num_participants
+        assert tot_participants % self.group_size == 0, GROUP_SIZE_ERR_MSG
+        ############ END OF: Checking group size #############################################################
+
         for p in self.get_players():
             p.evaluation = random.uniform(Constants.lb, Constants.ub)
             p.direction = 1 if p.role() == Constants.seller else -1
@@ -104,7 +116,7 @@ class Player(BasePlayer):
     direction = models.IntegerField(choices=(-1, 1))
 
     def role(self):
-        if self.id_in_group <= Constants.num_sellers:
+        if self.id_in_group <= self.subsession.num_sellers:
             return Constants.seller
         return Constants.buyer
 
@@ -144,7 +156,8 @@ class Auction(djmodels.Model):
 
     def __str__(self):
         selling = 'Selling' if self.selling_auction else 'Buying'
-        return f'{selling} auction with baseline {self.auctioneer.evaluation}'
+        minimax = 'minimum' if self.selling_auction else 'maximum'
+        return f'#{self.pk}: {selling} auction at {minimax} {self.auctioneer.evaluation}'
 
     def set_winner(self):
         """

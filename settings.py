@@ -5,6 +5,7 @@ from os import environ
 # the session config can be accessed from methods in your apps as self.session.config,
 # e.g. self.session.config['participation_fee']
 
+POINTS_DECIMAL_PLACES = 2
 SESSION_CONFIG_DEFAULTS = {
     'real_world_currency_per_point': 1.00,
     'participation_fee': 0.00,
@@ -17,6 +18,9 @@ SESSION_CONFIGS = [
        'display_name': "Endogenous market formation",
        'num_demo_participants': 3,
        'app_sequence': ['volauction'],
+        'num_buyers': 2,
+        'num_sellers': 1,
+        'use_browser_bots': False,
     },
 ]
 

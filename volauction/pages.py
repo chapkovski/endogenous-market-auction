@@ -2,6 +2,24 @@ from otree.api import Currency as c, currency_range
 from ._builtin import Page, WaitPage
 from .models import Constants, Auction, Bid
 from .forms import BidForm
+from utils import cp
+
+########### BLOCK: CONCRETE CLASSES ##############################################################
+
+class GroupCreateWP(WaitPage):
+    """
+    We form the group of dynamic size based on session.config params (sum of num_traders and num_auctioneers params.
+
+    """
+    group_by_arrival_time = True
+
+    def is_displayed(self):
+        return self.round_number == 1
+
+    def get_players_for_group(self, waiting_players):
+        group_size = self.subsession.group_size
+        if len(waiting_players) >= group_size:
+            return waiting_players[:group_size]
 
 
 class Announcement(Page):
@@ -58,15 +76,17 @@ class BeforeResultsWP(WaitPage):
 class NoAuction(Page):
     def is_displayed(self):
         if self.player.auctioneer:
-            return Auction.objects.filter(auctioneer=self.player,winner__isnull=False)
+            return Auction.objects.filter(auctioneer=self.player, winner__isnull=True).exists()
         else:
             return not self.player.is_auction_available()
+
 
 class Results(Page):
     pass
 
 
 page_sequence = [
+    GroupCreateWP,
     # Announcement,
     ChoosingActivity,
     BeforeTradeWP,
