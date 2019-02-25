@@ -74,9 +74,6 @@ class Group(BaseGroup):
             else:
                 p.set_trader_payoff()
 
-    def get_available_auctions(self):
-        # TODO: filter those where price is set?
-        return list(self.auctions.all())
 
     @property
     def traders(self):
@@ -87,10 +84,22 @@ class Group(BaseGroup):
         return [p for p in self.get_players() if p.auctioneer]
 
     def set_winning_bids(self):
+        """
+        Loop through group's auctions and set the winner (if any).
+
+        :return: None
+        :rtype: None
+        """
         for a in self.auctions.all():
             a.set_winner()
 
     def mark_trader_winners(self):
+        """
+        Dump winners to the oTree player's model so they can be exported later.
+
+        :return:None
+        :rtype: None
+        """
         for t in self.traders:
             try:
                 t.trader_is_winner = t.bid == t.bid.auction.winner
@@ -98,11 +107,25 @@ class Group(BaseGroup):
                 pass
 
     def dump_winning_prices(self):
+        """
+        Dump winning prices to the db for export.
+
+        :return: None
+        :rtype: None
+        """
         for a in self.auctioneers:
             if a.auction.winner:
                 a.auc_price = a.auction.winner.price
 
     def is_auction_available(self, selling):
+        """
+        Check if there is an available auction of a certain type - to show or not to show Auction page for traders.
+
+        :param selling: True if a player is interested in selling auctions
+        :type selling: bool
+        :return: Yes, if the auction of this type is available
+        :rtype: bool
+        """
         return self.auctions.filter(selling_auction=selling).exists()
 
 
@@ -124,6 +147,12 @@ class Player(BasePlayer):
         return self.role() == Constants.seller
 
     def is_auction_available(self):
+        """
+        Checking if the group has an auction of a corresponding type.
+
+        :return: Yes, if a group has an auction to participate in of a type correspodning to a player's role.
+        :rtype: bool
+        """
         return self.group.is_auction_available(selling=self.role() == Constants.buyer)
 
     def get_payoff(self, price):
@@ -157,6 +186,7 @@ class Auction(djmodels.Model):
     def __str__(self):
         selling = 'Selling' if self.selling_auction else 'Buying'
         minimax = 'minimum' if self.selling_auction else 'maximum'
+        # we pass pk here to distinguish between auctions with the same evaluation.
         return f'#{self.pk}: {selling} auction at {minimax} {self.auctioneer.evaluation}'
 
     def set_winner(self):
@@ -172,7 +202,7 @@ class Auction(djmodels.Model):
 
         if winning_price:
             winners = bids.filter(price=winning_price)
-            # we need this BS because of ties.
+            # we need this BS  to solve possible ties.
             self.winner = random.choice(winners)
             self.save()
 
